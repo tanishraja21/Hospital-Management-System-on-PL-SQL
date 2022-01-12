@@ -1,0 +1,233 @@
+DROP PROCEDURE Add_new_patient;
+DROP PROCEDURE Admit_patient;
+DROP PROCEDURE ASSIGN_ROOM;
+DROP PROCEDURE Treatment_add;
+DROP PROCEDURE Patient_DrugAllergy;
+DROP PROCEDURE Prescribe_a_drug;
+DROP PROCEDURE nurse_patient_details;
+DROP PROCEDURE discharge_patient;
+DROP PROCEDURE contact_tracing;
+DROP PROCEDURE room_stat;
+DROP PROCEDURE shift_statistics;
+DROP PROCEDURE Re_admission;
+
+
+set serveroutput on;
+---feature 1 and 2 
+
+exec  Add_new_patient('Brazen', 'male', date '1998-10-09', 'Belwood green , Maryland', 6288392802, 'brazenasile@gmail.com');--
+--Already exist
+--Expected output would be 'Patient Alredy Exists' because it has alredy been stored in the table
+/  
+exec  Add_new_patient('Virat2', 'male', date '1985-10-15', 'Belwood green , Maryland', 6288392000, 'ro_hit@gmail.com');
+--Newly Assigned
+---New patinet is getting added in patient table, you could see a new row getting added 
+/
+select * from patient;
+/
+
+---Feature 2
+exec Admit_patient('Rohit', date '1990-10-20', 91,101, 'ankle surgery');
+--Wrong patient
+---This will print out an error msg 'Inavlid patient Id'
+/
+exec Admit_patient('Brazen', date '1998-10-09', 90,101, 'ankle surgery');
+--Wrong hos
+---This This will print out an error msg 'Inavlid Hospital'
+/
+exec Admit_patient('Brazen', date '1998-10-09', 91,100, 'ankle surgery');
+--Doc is not associated with any hos
+---This This will print out an error msg 'doctor is not associated with given Hospital'
+/
+exec Admit_patient('Brazen', date '1998-10-09', 91,101, 'ankle surgery');
+--Correct
+---This exe statement will add data into message and admission table 
+/
+select * from message;
+/
+select * from admission;
+/
+----------------------------------------------------------------------------------------
+
+---Feature 3 
+
+EXEC ASSIGN_ROOM(126,timestamp '2021-10-10 09:00:00.00',timestamp '2021-10-12 09:00:00.00', 'regular' );
+/
+EXEC ASSIGN_ROOM(1000,timestamp '2021-10-10 09:00:00.00',timestamp '2021-10-12 09:00:00.00', 'regular' );
+/
+EXEC ASSIGN_ROOM(127,timestamp '2021-10-10 09:00:00.00',timestamp '2021-10-12 09:00:00.00', 'regular' );
+/*111
+Room ID: 111 Room Location: First Floor, Building A, Room A
+*/
+/
+select * from message1;
+/
+
+---------------------------------------------------------------------------------------
+
+-------feature 4 and 5 
+exec Treatment_add(100,189,date '2021-01-25');
+--------invalid id-----------------
+/
+select *from admission_treatment;
+/
+exec Treatment_add(126,131,date '2021-10-06');
+------ inserting a row------------
+/
+select *from admission_treatment;
+/
+exec Patient_DrugAllergy(2003,ListOfDrugs('4','5','7'));
+----- invalid patient id --------
+/
+exec Patient_DrugAllergy(123,ListOfDrugs('53', '54', '55'));
+-------- invalid drug id ---------
+------- insertion in drug_allergy ------- 
+exec Patient_DrugAllergy(123,ListOfDrugs('124','456'));
+/
+select *from drug_allergy;
+/
+
+---------------------------------------------------------------------------------------
+---feature 6  
+
+exec Prescribe_a_drug(16, 4, date '2021-10-14',1,2); --Invalid Drug Id
+/
+exec Prescribe_a_drug(137, 19, date '2021-10-04',1,2); --Invalid Admission Id
+/
+exec Prescribe_a_drug(137, 127, date '2021-10-14',1,2);  --Patient  is not allergic to
+/*Drug Id is valid
+Admission Id is valid
+Patient Brazen is not allergic to Amlodipine*/
+/
+
+-------------------------------------------------------------------------------------------
+
+----feature 7 and 8  
+
+---For Invalid nurse id---
+exec nurse_patient_details(105,timestamp '2021-10-8 10:00:00.00');
+---For nurse not working at given time---
+/
+exec nurse_patient_details(107,timestamp '2021-10-8 10:00:00.00');
+---For nurse is working on a shift at the input time---
+/
+exec nurse_patient_details(106,timestamp '2021-10-8 10:00:00.00');
+/
+
+--OUTPUT: Invalid nurse id, The nurse is not working at given time,
+  --      Room Details:111 ^^ First Floor, Building A, Room A ^^ Brazen
+    --    Room Details:111 ^^ First Floor, Building A, Room A ^^ Rohit
+
+/*** for invalid admission id ***/
+exec discharge_patient(125,date '2021-10-08','the patient is discharged');
+/***for valid admission id updates admission table and inserts into message table checking treatment and prescription  ***/
+/
+exec discharge_patient(127,date '2021-10-08','the patient is discharged');
+/
+select*from admission;
+/
+select*from message;
+/
+--OUTPUT: Invalid Admission ID,
+  --       Success 1
+    --     List of Treatment as follows:
+      --   132 ^^ acupuncture ^^ 10-OCT-21
+        -- List of Presciption as follows:
+        -- Metoprolol ^^ 1000mg a time ^^ 2 time perday ^^ 16-OCT-21 ^^ 2 ^^ 2
+
+----------------------------------------------------------------------------------------------------------
+----Group Feature 9
+exec contact_tracing  ('Braz', date '1998-10-09', date '2021-10-07'); ---patient does not exist
+---This exe statement will print out an error msg 'patient does not exist'
+    /
+exec contact_tracing  ('Brazen', date '1998-10-09', date '2022-10-07');---no patient on this day
+---This will print out an error msg Patient does not exist on that perticular day
+    /
+exec contact_tracing('Brazen', date '1998-10-09', date '2021-10-07');---correct one 
+---Name of doctor associated to a patient with room id, start time and end time
+---It prints out the name of the nurses with their shift timings and assigned rooms     
+/*Room ID    = 111
+Start Time = 08-10-21 7:30:00.000000 AM
+End Time   = 11-10-21 1:00:00.000000 PM
+Doctor Id  = 101
+Doctor name= Jeff
+--------------------------------------------------------
+--------------------------------------------------------
+Nurse Name   = Alice
+Start Time = 09-10-21 6:00:00.000000 AM
+End Time   = 09-10-21 8:00:00.000000 PM
+Nurse Name   = Alice
+Start Time = 08-10-21 7:10:00.000000 AM
+End Time   = 08-10-21 8:00:00.000000 PM*/
+/     
+------------------------------------------------------------------
+-----Group Feature 10
+exec  room_stat(date'2021-10-06', date'2021-10-15', 91);-- valid one --room assigned to atlest one patient
+---print Number of days with the room id in the hopital
+---room occupancy
+---Then it prints room location, room type
+/*Total days for each room that there is a patient assigned to room 113  is   0
+ Occupancy rate for room 113  is  0
+Room ID 112 Room type operating location Second Floor, Building A, Room B
+
+ Total days for each room that there is a patient assigned to room 112  is   2
+ Occupancy rate for room 112  is  22.22222222222222222222222222222222222222
+Room ID 112 Room type operating location Second Floor, Building A, Room B
+
+ Total days for each room that there is a patient assigned to room 111  is   4
+ Occupancy rate for room 111  is  44.44444444444444444444444444444444444444
+Room ID 112 Room type operating location Second Floor, Building A, Room B*/
+/
+exec  room_stat(date'2021-10-06', date'2021-10-15', 2);--invalid hospital
+--- This exe statement will print out an error msg saying that this hospital is invalid/does not exist.
+/
+
+------------------------------------------------------------------    
+-----Group Feature 11     
+exec shift_statistics(1, date '2021-10-1', date '2021-10-25');--Invalid Hid
+--Expected output would be an error : 'Hospital Id is not present in DB'
+/
+exec shift_statistics(91, date '2021-10-1', date '2021-10-25');--working for more than 12 hrs before 8am or after 8pm or both
+---Print nurse shift working hours 
+---Name of the nurse and average working hours
+---and then total average working hours
+/*Working hours shift 1:12 and shift 2:0
+Working hours shift 1:12 and shift 2:0
+Nurse name:Alice and Average working hours:-> .5
+Total average hours-Nusrses:-> .5*/
+/
+exec shift_statistics(94, date '2021-10-1', date '2021-10-25');--special case, 8Am-8AM+ , mpre than 24 hrs
+---Print nurse shift working hours 
+---Name of the nurse and average working hours
+---and then total average working hours
+/*Working hours shift 1:24 and shift 2:0
+Nurse name:Nicole and Average working hours:-> 1
+Total average hours-Nusrses:-> 1*/
+/
+exec shift_statistics(95, date '2021-10-1', date '2021-10-25');-- between 8am to 8pm, less than 12 hrs
+---Print nurse shift working hours 
+---Name of the nurse and average working hours
+---and then total average working hours
+/*Working hours shift 1:2.5 and shift 2:0
+Nurse name:Karen and Average working hours:-> .125
+Total average hours-Nusrses:-> .125*/
+/
+-------------------------------------------------------------------
+---Group Feature 12
+
+exec Re_admission(interval '1' day); 
+---Print the names of all the hospitals with their readmission rate, reasons for readmission, discharge and admission date
+---with given duration.
+/
+exec Re_admission(interval '60' day);
+---Print the names of all the hospitals with their readmission rate, reasons for readmission, discharge and admission date
+---with given duration.
+
+/*Patient Name: Isle  Admission Date: 15-10-21 Discharge date: 18-10-21 Reason 1: eye checkup Reason 2: eye checkup
+Patient Name: Isle  Admission Date: 19-10-21 Discharge date: 22-10-21 Reason 1: eye checkup Reason 2: eye checkup
+Patient Name: Isle  Admission Date: 19-10-21 Discharge date: 22-10-21 Reason 1: eye checkup Reason 2: eye checkup
+Hospital Name: CMC readmission rate: 0
+Hospital Name: Apollo readmission rate: 0
+Hospital Name: 7 Hills readmission rate: 0
+Hospital Name: Christian Medical Hospital readmission rate: 300
+Hospital Name: Baruda readmission rate: 0*/
